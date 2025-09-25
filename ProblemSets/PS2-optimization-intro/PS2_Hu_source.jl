@@ -1,7 +1,4 @@
-using Optim, HTTP, GLM, LinearAlgebra, Random, Statistics, DataFrames, CSV, FreqTables
-
-cd(@__DIR__)
-
+function
 #:::::::::::::::::::::::::::::::::::::::::::::::::::
 # question 1
 #:::::::::::::::::::::::::::::::::::::::::::::::::::

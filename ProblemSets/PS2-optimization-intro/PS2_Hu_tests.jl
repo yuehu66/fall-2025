@@ -1,9 +1,6 @@
 using Test, Optim, LinearAlgebra, Random, Statistics
 
-# Set random seed for reproducible tests
-Random.seed!(123)
-
-println("Running unit tests for PS2 functions...")
+include("PS2_Hu_source.jl")
 
 #:::::::::::::::::::::::::::::::::::::::::::::::::::
 # Test Question 1 functions

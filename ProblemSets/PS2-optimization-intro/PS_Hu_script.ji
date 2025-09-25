@@ -6,4 +6,4 @@ cd(@__DIR__)
 include("PS2_Hu_source.jl")
 
 # Execute the function
-PS2()
+allwrap()
