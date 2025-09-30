@@ -21,7 +21,7 @@ end
 
 function mlogit_with_Z(theta, X, Z, y)
     # Extract parameters
-    theta = [alpha1, alpha2, ..., alpha21, gamma]
+    # theta = [alpha1, alpha2, ..., alpha21, gamma]
     # alpha has K*(J-1) = 3*7 = 21 elements
     # gamma is the coefficient on Z
     alpha = theta[1:end-1]  # first 21 elements
@@ -41,7 +41,7 @@ function mlogit_with_Z(theta, X, Z, y)
     bigAlpha = [reshape(alpha, K, J-1) zeros(K)]
     
     # Compute choice probabilities
-    P_ij = exp(X_i*beta_j + gamma*(Z_ij - Z_iJ)) / denominator
+    # P_ij = exp(X_i*beta_j + gamma*(Z_ij - Z_iJ)) / denominator
     # where denominator sums over all choices
     
     # Initialize probability matrix  
@@ -98,15 +98,15 @@ function variance_quadrature()
     println("\n=== Question 3b: Variance using Quadrature ===")
     
     # Define N(0,2) distribution
-    d = Normal(0, σ)
     σ = 2
+    d = Normal(0, σ)
     
     # Use quadrature to compute ∫x²f(x)dx with 7 points
     nodes7, weights7 = lgwt(7, -5*σ, 5*σ)
     variance_7pts = sum(weights7 .* (nodes7.^2) .* pdf.(d, nodes7))
     
     # Use quadrature to compute ∫x²f(x)dx with 10 points
-    nodes10, weights10 = lgwt(10, -5*σ, 5*σ)  
+    nodes10, weights10 = lgwt(10, -5*σ, 5*σ)
     variance_10pts = sum(weights10 .* (nodes10.^2) .* pdf.(d, nodes10))
     
     println("Variance with 7 quadrature points: $variance_7pts")
@@ -125,40 +125,38 @@ function practice_monte_carlo()
     
     σ = 2
     d = Normal(0, σ)
-    a, b = -5*σ, 5*σ
+    A, B = -5*σ, 5*σ
     
-    # TODO: Implement Monte Carlo integration function
+    # Implement Monte Carlo integration function
     function mc_integrate(f, a, b, D)
         # ∫f(x)dx ≈ (b-a) * (1/D) * Σf(X_i) where X_i ~ U[a,b]
-        # draws = rand(D) * (b - a) .+ a  # uniform draws on [a,b]
-        # return (b - a) * mean(f.(draws))
+        draws = rand(D) * (b - a) .+ a  # uniform draws on [a,b]
+        return (b - a) * mean(f.(draws))
     end
     
     # Test with different numbers of draws
-    for D in [1000, 1000000]
+    for D in [1_000, 1_000_000]
         println("\nWith D = $D draws:")
         
-        # TODO: Variance: ∫x²f(x)dx  
-        # variance_mc = mc_integrate(x -> x^2 * pdf(d, x), a, b, D)
-        println("MC Variance: [FILL IN] (true: $(σ^2))")
+        # Variance: ∫x²f(x)dx  
+        variance_mc = mc_integrate(x -> x^2 * pdf(d, x), A, B, D)
+        println("MC Variance: ", variance_mc," (true: $(σ^2))")
         
-        # TODO: Mean: ∫xf(x)dx
-        # mean_mc = mc_integrate(x -> x * pdf(d, x), a, b, D)  
-        println("MC Mean: [FILL IN] (true: 0)")
+        # Mean: ∫xf(x)dx
+        mean_mc = mc_integrate(x -> x * pdf(d, x), A, B, D)
+        println("MC Mean: ", mean_mc," (true: 0)")
         
-        # TODO: Density integral: ∫f(x)dx
-        # density_mc = mc_integrate(x -> pdf(d, x), a, b, D)
-        println("MC Density integral: [FILL IN] (true: 1)")
+        # Density integral: ∫f(x)dx
+        density_mc = mc_integrate(x -> pdf(d, x), A, B, D)
+        println("MC Density integral: ", density_mc," (true: 1)")
     end
 end
 
 #---------------------------------------------------
-# Question 4: Mixed Logit with Quadrature (DO NOT RUN!)
+# Question 4: Mixed Logit with Quadrature 
 #---------------------------------------------------
 
 function mixed_logit_quad(theta, X, Z, y, nodes, weights)
-    # Extract parameters
-    # theta = [alpha1, ..., alpha21, mu_gamma, sigma_gamma]
     K = size(X, 2)
     J = length(unique(y))
     N = length(y)
@@ -176,38 +174,37 @@ function mixed_logit_quad(theta, X, Z, y, nodes, weights)
     # Reshape alpha 
     bigAlpha = [reshape(alpha, K, J-1) zeros(K)]
     
-    # TODO: Implement mixed logit with quadrature
-    # This involves integrating over the distribution of gamma
-    
+    # Implement mixed logit with quadrature
+    # nodes, weights should be provided as arguments
+
     # Initialize integrated probabilities
     T = promote_type(eltype(X), eltype(theta))
     P_integrated = zeros(T, N, J)
     
-    # TODO: For each quadrature point r:
+    # For each quadrature point r:
     # 1. Transform node: gamma_r = mu_gamma + sigma_gamma * nodes[r]
     # 2. Compute choice probabilities for this gamma_r (like regular logit)
     # 3. Weight by quadrature weight and normal density
     # 4. Add to integrated probabilities
     
+    # Loop through grid points to do summation via loop
     for r in eachindex(nodes)
-        # gamma_r = mu_gamma + sigma_gamma * nodes[r]
-        
+        num_r = zeros(T, N, J)
         # Compute probabilities for this gamma_r
-        # num_r = zeros(T, N, J)
-        # for j = 1:J
-        #     num_r[:,j] = exp.(X * bigAlpha[:,j] .+ gamma_r .* (Z[:,j] .- Z[:,J]))
-        # end
-        # dem_r = sum(num_r, dims=2)
-        # P_r = num_r ./ dem_r
+        for j = 1:J
+            num_r[:,j] = exp.(X * bigAlpha[:,j] .+ nodes[r] .* (Z[:,j] .- Z[:,J]))
+        end
+        dem_r = sum(num_r, dims=2)
+        P_r = num_r ./ dem_r
         
-        # Weight and add to integrated probabilities
-        # density_weight = weights[r] * pdf(Normal(0,1), nodes[r])
-        # P_integrated .+= P_r * density_weight
+    # Weight and add to integrated probabilities
+    density_weight = weights[r] * pdf(Normal(mu_gamma,sigma_gamma), nodes[r])
+    P_integrated .+= (P_r .^ bigY) .* density_weight
     end
-    
-    # TODO: Compute log-likelihood  
-    # loglike = -sum(bigY .* log.(P_integrated))
-    
+
+    # Compute log-likelihood
+    loglike = -sum(log.(P_integrated))
+
     return loglike
 end
 
@@ -233,37 +230,40 @@ function mixed_logit_mc(theta, X, Z, y, D)
     
     bigAlpha = [reshape(alpha, K, J-1) zeros(K)]
     
-    # TODO: Implement mixed logit with Monte Carlo
+    # Implement mixed logit with Monte Carlo
+    b = mu_gamma + 5 * sigma_gamma
+    a = mu_gamma - 5 * sigma_gamma
+    draws = rand(D) * (b - a) .+ a
     # Similar to quadrature but with random draws instead of nodes/weights
     
     T = promote_type(eltype(X), eltype(theta))
     P_integrated = zeros(T, N, J)
     
-    # TODO: For d = 1 to D:
+    # For d = 1 to D:
     # 1. Draw gamma_d from N(mu_gamma, sigma_gamma^2)
     # 2. Compute choice probabilities for this draw
     # 3. Add to running average (P_integrated += P_d / D)
     
     gamma_dist = Normal(mu_gamma, sigma_gamma)
     
+    # Loop through draws
     for d = 1:D
-        # gamma_d = rand(gamma_dist)
         
         # Compute probabilities for this draw (same as regular logit)
-        # num_d = zeros(T, N, J)  
-        # for j = 1:J
-        #     num_d[:,j] = exp.(X * bigAlpha[:,j] .+ gamma_d .* (Z[:,j] .- Z[:,J]))
-        # end
-        # dem_d = sum(num_d, dims=2)
-        # P_d = num_d ./ dem_d
-        
-        # Add to running average
-        # P_integrated .+= P_d / D
+        num_d = zeros(T, N, J)  
+        for j = 1:J
+            num_d[:,j] = exp.(X * bigAlpha[:,j] .+ draws[d] .* (Z[:,j] .- Z[:,J]))
+        end
+        dem_d = sum(num_d, dims=2)
+        P_d = num_d ./ dem_d
+
+    # Add to running average (standard MC integration)
+    P_integrated .+= (P_d .^ bigY) / D
     end
-    
-    # TODO: Compute log-likelihood
-    # loglike = -sum(bigY .* log.(P_integrated))
-    
+
+    # Compute log-likelihood
+    loglike = -sum(bigY .* log.(P_integrated))
+
     return loglike
 end
 
@@ -303,20 +303,20 @@ function optimize_mixed_logit_quad(X, Z, y)
     nodes, weights = lgwt(7, -4, 4)
     
     # Starting values: K*(J-1) alphas + mu_gamma + sigma_gamma
-    # TODO: Use regular logit estimates as starting values for alpha and gamma
+    # Use regular logit estimates as starting values for alpha and gamma
     startvals = [2*rand(K*(J-1)).-1; 0.1; 1.0]  # last element is sigma_gamma
     
-    # TODO: Set up optimization (DON'T ACTUALLY RUN - TOO SLOW!)
+    # Set up optimization (DEMONSTRATION ONLY - DO NOT RUN FOR LARGE DATA)
     # result = optimize(theta -> mixed_logit_quad(theta, X, Z, y, nodes, weights),
     #                  startvals, LBFGS(),
     #                  Optim.Options(g_tol = 1e-5, iterations=100_000, show_trace=true);
     #                  autodiff = :forward)
-    
+
     println("Mixed logit quadrature optimization setup complete (not executed)")
     return startvals  # Return starting values instead of running
 end
 
-function optimize_mixed_logit_mc(X, Z, y)
+function optimize_mixed_logit_mc(X, Z, y, R)
     K = size(X, 2)
     J = length(unique(y))
     
@@ -325,10 +325,10 @@ function optimize_mixed_logit_mc(X, Z, y)
     # Starting values: same as quadrature version
     startvals = [2*rand(K*(J-1)).-1; 0.1; 1.0]
     
-    # TODO: Set up optimization (DON'T ACTUALLY RUN - TOO SLOW!)
+    # Set up optimization (DEMONSTRATION ONLY - DO NOT RUN FOR LARGE DATA)
     # result = optimize(theta -> mixed_logit_mc(theta, X, Z, y, D),
     #                  startvals, LBFGS(),
-    #                  Optim.Options(g_tol = 1e-5, iterations=100_000, show_trace=true);
+    #                  Optim.Options(g_tol = 1e-5, iterations=10, show_trace=true);
     #                  autodiff = :forward)
     
     println("Mixed logit Monte Carlo optimization setup complete (not executed)")
@@ -360,7 +360,6 @@ function allwrap()
     println("γ̂ = ", gamma_hat)
     println("α̂ = ", alpha_hat)
 
-
     
     # Question 2: Interpret gamma
     println("\n=== QUESTION 2: INTERPRETATION ===")
@@ -370,7 +369,8 @@ function allwrap()
     practice_quadrature()
     variance_quadrature() 
     practice_monte_carlo()
-    
+  
+
     # Question 4: Mixed logit with quadrature (setup only)
     println("\n=== QUESTION 4: MIXED LOGIT QUADRATURE (SETUP) ===")
     optimize_mixed_logit_quad(X, Z, y)
@@ -382,11 +382,5 @@ function allwrap()
     println("\n=== ALL ANALYSES COMPLETE ===")
 end
 
-# allwrap()
+allwrap()
 
-println("Starter code loaded successfully!")
-println("Remember to:")
-println("1. Fill in all TODO sections")
-println("2. Test functions step by step")  
-println("3. Don't run mixed logit estimations (too computationally intensive)")
-println("4. Use automatic differentiation in optimization")
